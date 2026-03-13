@@ -10,6 +10,50 @@ const query = `*[_type == "post" && slug.current == $slug][0] {
   body
 }`;
 
+// Fungsi otomatis untuk men-generate SEO & Open Graph setiap artikel
+export async function generateMetadata({ params }) {
+  const resolvedParams = await params;
+  const slug = resolvedParams.slug;
+  
+  // Menarik data khusus untuk kebutuhan SEO
+  const post = await client.fetch(`*[_type == "post" && slug.current == $slug][0] {
+    title,
+    "imageUrl": mainImage.asset->url
+  }`, { slug });
+
+  // Jika artikel tidak ada, berikan SEO default
+  if (!post) {
+    return { title: 'Artikel Tidak Ditemukan | Kpop Chart' };
+  }
+
+  // Merakit metadata SEO dan Open Graph
+  return {
+    title: `${post.title} | Kpop Chart`,
+    description: `Baca update terbaru tentang ${post.title} selengkapnya hanya di Kpop Chart.`,
+    openGraph: {
+      title: `${post.title} | Kpop Chart`,
+      description: `Baca update terbaru tentang ${post.title} selengkapnya hanya di Kpop Chart.`,
+      url: `https://kpopchart-web.vercel.app/post/${slug}`, // Ganti dengan domain aslimu nanti
+      siteName: 'Kpop Chart',
+      images: [
+        {
+          url: post.imageUrl || 'https://kpopchart-web.vercel.app/default-og.jpg', 
+          width: 1200,
+          height: 630,
+          alt: post.title,
+        },
+      ],
+      type: 'article',
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: `${post.title} | Kpop Chart`,
+      description: `Baca update terbaru tentang ${post.title} selengkapnya hanya di Kpop Chart.`,
+      images: [post.imageUrl || 'https://kpopchart-web.vercel.app/default-og.jpg'],
+    },
+  };
+}
+
 export default async function PostDetail({ params }) {
   const resolvedParams = await params;
   const slug = resolvedParams.slug;
